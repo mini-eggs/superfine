@@ -43,15 +43,6 @@ var DEFAULT = 0;
 var RECYCLED_NODE = 1;
 var TEXT_NODE = 2;
 
-var XLINK_NS = "http://www.w3.org/1999/xlink";
-var SVG_NS = "http://www.w3.org/2000/svg";
-
-var EMPTY_OBJECT = {};
-var EMPTY_ARRAY: Array<any> = [];
-
-var map = EMPTY_ARRAY.map;
-var isArray = Array.isArray;
-
 var merge = function(a: KeyValueMap, b: KeyValueMap) {
   var target: KeyValueMap = {};
 
@@ -69,8 +60,7 @@ var updateProperty = function(
   element: SuperFineElement,
   name: string,
   lastValue: any,
-  nextValue: any,
-  isSvg: boolean
+  nextValue: any
 ) {
   if (name === "key") {
   } else if (name === "style") {
@@ -103,27 +93,17 @@ var updateProperty = function(
         name !== "list" &&
         name !== "draggable" &&
         name !== "spellcheck" &&
-        name !== "translate" &&
-        !isSvg
+        name !== "translate"
       ) {
         element[name] = nextValue == null ? "" : nextValue;
         if (nullOrFalse) {
           element.removeAttribute(name);
         }
       } else {
-        var ns = isSvg && name !== (name = name.replace(/^xlink:?/, ""));
-        if (ns) {
-          if (nullOrFalse) {
-            element.removeAttributeNS(XLINK_NS, name);
-          } else {
-            element.setAttributeNS(XLINK_NS, name, nextValue);
-          }
+        if (nullOrFalse) {
+          element.removeAttribute(name);
         } else {
-          if (nullOrFalse) {
-            element.removeAttribute(name);
-          } else {
-            element.setAttribute(name, nextValue);
-          }
+          element.setAttribute(name, nextValue);
         }
       }
     }
@@ -132,15 +112,13 @@ var updateProperty = function(
 
 var createElement = function(
   node: SuperFineNode,
-  lifecycle: SuperFineLifecycle,
-  isSvg: boolean
+  lifecycle: SuperFineLifecycle
 ) {
-  var element =
+  // @ts-ignore
+  var element: SuperFineElement =
     node.type === TEXT_NODE
       ? document.createTextNode(node.name)
-      : (isSvg = isSvg || node.name === "svg")
-        ? document.createElementNS(SVG_NS, node.name)
-        : document.createElement(node.name);
+      : document.createElement(node.name);
 
   var props = node.props;
   if (props.oncreate) {
@@ -151,14 +129,14 @@ var createElement = function(
   }
 
   for (var i = 0, length = node.children.length; i < length; i++) {
-    element.appendChild(createElement(node.children[i], lifecycle, isSvg));
+    element.appendChild(createElement(node.children[i], lifecycle));
   }
 
   for (var name in props) {
-    updateProperty(element as SuperFineElement, name, null, props[name], isSvg);
+    updateProperty(element, name, null, props[name]);
   }
 
-  return (node.element = element as SuperFineElement);
+  return (node.element = element);
 };
 
 var updateElement = function(
@@ -166,7 +144,6 @@ var updateElement = function(
   lastProps: SuperFineNodeProps,
   nextProps: SuperFineNodeProps,
   lifecycle: SuperFineLifecycle,
-  isSvg: boolean,
   isRecycled: boolean
 ) {
   for (var name in merge(lastProps, nextProps)) {
@@ -175,7 +152,7 @@ var updateElement = function(
         ? element[name]
         : lastProps[name]) !== nextProps[name]
     ) {
-      updateProperty(element, name, lastProps[name], nextProps[name], isSvg);
+      updateProperty(element, name, lastProps[name], nextProps[name]);
     }
   }
 
@@ -241,8 +218,7 @@ var patchElement = function(
   element: SuperFineElement,
   lastNode: SuperFineNode | null,
   nextNode: SuperFineNode,
-  lifecycle: SuperFineLifecycle,
-  isSvg: boolean
+  lifecycle: SuperFineLifecycle
 ) {
   if (nextNode === lastNode) {
   } else if (
@@ -255,7 +231,7 @@ var patchElement = function(
     }
   } else if (lastNode == null || lastNode.name !== nextNode.name) {
     var newElement = parent.insertBefore(
-      createElement(nextNode, lifecycle, isSvg),
+      createElement(nextNode, lifecycle),
       element
     );
 
@@ -268,7 +244,6 @@ var patchElement = function(
       lastNode.props,
       nextNode.props,
       lifecycle,
-      (isSvg = isSvg || nextNode.name === "svg"),
       lastNode.type === RECYCLED_NODE
     );
 
@@ -296,8 +271,7 @@ var patchElement = function(
         lastChildren[lastChStart].element,
         lastChildren[lastChStart],
         nextChildren[nextChStart],
-        lifecycle,
-        isSvg
+        lifecycle
       );
 
       lastChStart++;
@@ -315,8 +289,7 @@ var patchElement = function(
         lastChildren[lastChEnd].element,
         lastChildren[lastChEnd],
         nextChildren[nextChEnd],
-        lifecycle,
-        isSvg
+        lifecycle
       );
 
       lastChEnd--;
@@ -326,7 +299,7 @@ var patchElement = function(
     if (lastChStart > lastChEnd) {
       while (nextChStart <= nextChEnd) {
         element.insertBefore(
-          createElement(nextChildren[nextChStart++], lifecycle, isSvg),
+          createElement(nextChildren[nextChStart++], lifecycle),
           (childNode = lastChildren[lastChStart]) && childNode.element
         );
       }
@@ -360,8 +333,7 @@ var patchElement = function(
               childNode && childNode.element,
               childNode,
               nextChildren[nextChStart],
-              lifecycle,
-              isSvg
+              lifecycle
             );
             nextChStart++;
           }
@@ -373,8 +345,7 @@ var patchElement = function(
               childNode.element,
               childNode,
               nextChildren[nextChStart],
-              lifecycle,
-              isSvg
+              lifecycle
             );
             nextKeyed[nextKey] = true;
             lastChStart++;
@@ -388,8 +359,7 @@ var patchElement = function(
                 ),
                 savedNode,
                 nextChildren[nextChStart],
-                lifecycle,
-                isSvg
+                lifecycle
               );
               nextKeyed[nextKey] = true;
             } else {
@@ -398,8 +368,7 @@ var patchElement = function(
                 childNode && childNode.element,
                 null,
                 nextChildren[nextChStart],
-                lifecycle,
-                isSvg
+                lifecycle
               );
             }
           }
@@ -443,14 +412,7 @@ var createVNode = function(
 };
 
 var createTextVNode = function(text: string, element: SuperFineElement) {
-  return createVNode(
-    text,
-    EMPTY_OBJECT as SuperFineNodeProps,
-    EMPTY_ARRAY,
-    element,
-    null,
-    TEXT_NODE
-  );
+  return createVNode(text, {}, [], element, null, TEXT_NODE);
 };
 
 var recycleChild = function(element: SuperFineElement) {
@@ -462,8 +424,8 @@ var recycleChild = function(element: SuperFineElement) {
 var recycleElement = function(element: SuperFineElement) {
   return createVNode(
     element.nodeName.toLowerCase(),
-    EMPTY_OBJECT as SuperFineNodeProps,
-    map.call(element.childNodes, recycleChild),
+    {},
+    [].map.call(element.childNodes, recycleChild),
     element,
     null,
     RECYCLED_NODE
@@ -486,8 +448,7 @@ var patch = function(
     container.children[0] as SuperFineElement,
     lastNode,
     nextNode,
-    lifecycle,
-    false // todo, seems you cant have svg as root el?
+    lifecycle
   );
 
   // @ts-ignore
@@ -512,7 +473,7 @@ var h = function(name: Function | string, props: SuperFineNodeProps) {
   }
 
   while (rest.length > 0) {
-    if (isArray((node = rest.pop()))) {
+    if (Array.isArray((node = rest.pop()))) {
       for (length = node.length; length-- > 0; ) {
         rest.push(node[length]);
       }
