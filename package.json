@@ -1,16 +1,16 @@
 {
-  "name": "superfine",
+  "name": "@minieggs40/superfine",
   "description": "Minimal view layer for creating declarative web user interfaces.",
-  "version": "6.0.1",
-  "main": "dist/superfine.js",
+  "version": "0.3.0",
+  "main": "dist/es5.js",
   "license": "MIT",
-  "repository": "jorgebucaran/superfine",
-  "types": "dist/superfine.d.ts",
+  "repository": "mini-eggs/superfine",
+  "types": "dist/es5.d.ts",
   "files": [
     "src",
     "dist"
   ],
-  "author": "Jorge Bucaran",
+  "author": "Evan M Jones <me@evanjon.es> (https://evanjon.es/)",
   "keywords": [
     "superfine",
     "frontend",
@@ -19,13 +19,12 @@
   ],
   "scripts": {
     "test": "jest --coverage --no-cache",
-    "prepare": "npm run build",
-    "release": "npm run build && npm test && git commit -am $npm_package_version && git tag $npm_package_version && git push && git push --tags && npm publish",
-    "build": "npm-run-all build:pre-clean build:types build:tsickle build:gcc build:gzip build:post-clean",
+    "build": "npm-run-all build:pre-clean build:types build:tsickle build:gcc:es5 build:gcc:es6 build:gzip build:post-clean",
     "build:pre-clean": "rm -rf dist && mkdir dist",
-    "build:types": "tsc -d && cp src/index.d.ts dist/superfine.d.ts",
+    "build:types": "tsc -d && cp src/index.d.ts dist/es5.d.ts",
     "build:tsickle": "tsickle --externs externs/index.js",
-    "build:gcc": "java -jar ./node_modules/google-closure-compiler/compiler.jar --externs externs/index.js --output_wrapper '(function(){var self=typeof module!=\"undefined\"?module.exports:(this.superfine={});%output%})()' --use_types_for_optimization --assume_function_wrapper --formatting SINGLE_QUOTES --module_resolution WEBPACK --language_in=ECMASCRIPT_NEXT --language_out=ECMASCRIPT5 --compilation_level ADVANCED_OPTIMIZATIONS --js_output_file=dist/superfine.js 'src/**.js'",
+    "build:gcc:es5": "java -jar ./node_modules/google-closure-compiler/compiler.jar --externs externs/index.js --output_wrapper '(function(){var self=typeof module!=\"undefined\"?module.exports:(this.superfine={});%output%})()' --use_types_for_optimization --assume_function_wrapper --formatting SINGLE_QUOTES --module_resolution WEBPACK --language_in=ECMASCRIPT_NEXT --language_out=ECMASCRIPT5 --compilation_level ADVANCED_OPTIMIZATIONS --js_output_file=dist/es5.js 'src/**.js'",
+    "build:gcc:es6": "java -jar ./node_modules/google-closure-compiler/compiler.jar --externs externs/index.js --output_wrapper '(()=>{let self=typeof module!=\"undefined\"?module.exports:(this.wigly={});%output%})()' --use_types_for_optimization --assume_function_wrapper --formatting SINGLE_QUOTES --module_resolution WEBPACK --language_in=ECMASCRIPT_NEXT --language_out=ECMASCRIPT6 --compilation_level ADVANCED_OPTIMIZATIONS --js_output_file=dist/es6.js 'src/**.js'",
     "build:gzip": "gzip -k -f dist/*.js",
     "build:post-clean": "rm src/**.js src/**.d.ts && rm -rf externs",
     "size": "wc -c dist/*.js && wc -c dist/*.js.gz"
