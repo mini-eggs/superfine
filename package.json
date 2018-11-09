@@ -2,8 +2,7 @@
   "name": "superfine",
   "description": "Minimal view layer for creating declarative web user interfaces.",
   "version": "6.0.1",
-  "main": "dist/superfine.js",
-  "module": "src/index.js",
+  "main": "dist/superfine.es5.js",
   "license": "MIT",
   "repository": "jorgebucaran/superfine",
   "types": "superfine.d.ts",
@@ -21,9 +20,11 @@
   ],
   "scripts": {
     "test": "jest --coverage --no-cache",
-    "build": "npm run bundle && npm run minify",
-    "bundle": "rollup -i src/index.js -o dist/superfine.js -m -f umd -n superfine",
-    "minify": "uglifyjs dist/superfine.js -o dist/superfine.js -mc pure_funcs=['Object.defineProperty'] --source-map includeSources,url=superfine.js.map",
+    "build": "npm run build:clean && npm run build:gcc:es5 && npm run build:gcc:es6 && npm run build:gzip",
+    "build:clean": "rm -rf dist",
+    "build:gcc:es5": "java -jar ./node_modules/google-closure-compiler/compiler.jar --assume_function_wrapper --isolation_mode IIFE --use_types_for_optimization --language_in ECMASCRIPT_NEXT --language_out ECMASCRIPT5 --generate_exports --export_local_property_definitions --compilation_level ADVANCED --js_output_file=dist/superfine.es5.js 'src/**.js'",
+    "build:gcc:es6": "java -jar ./node_modules/google-closure-compiler/compiler.jar --assume_function_wrapper --isolation_mode IIFE --use_types_for_optimization --language_in ECMASCRIPT_NEXT --language_out ECMASCRIPT_2015 --generate_exports --export_local_property_definitions --compilation_level ADVANCED --js_output_file=dist/superfine.es6.js 'src/**.js'",
+    "build:gzip": "gzip dist/* -k -f",
     "prepare": "npm run build",
     "release": "npm run build && npm test && git commit -am $npm_package_version && git tag $npm_package_version && git push && git push --tags && npm publish"
   },
@@ -33,7 +34,6 @@
   "devDependencies": {
     "babel-env": "2.4.1",
     "jest": "^23.3.0",
-    "rollup": "^0.62.0",
-    "uglify-js": "^3.4.3"
+    "google-closure-compiler": "^20181008.0.0"
   }
 }
